@@ -214,7 +214,7 @@ export const materials = [
 
 export const studentSchedules = [
   { id: 1, studentId: 1, dayOfWeek: "Senin", startTime: "16:00", endTime: "18:00", subject: "TPS - Penalaran Umum", duration: "2 jam", liveClassUrl: "https://zoom.us/j/1234567890" },
-  { id: 2, studentId: 1, dayOfWeek: "Selasa", startTime: "16:00", endTime: "18:00", subject: "TPS - Penalaran Matematika", duration: "2 jam", liveClassUrl: "https://zoom.us/j/1234567891" },
+  { id: 2, studentId: 1, dayOfWeek: "Selasa", startTime: "16:00", endTime: "18:00", subject: "TPS - Penalaran Matematifka", duration: "2 jam", liveClassUrl: "https://zoom.us/j/1234567891" },
   { id: 3, studentId: 1, dayOfWeek: "Rabu", startTime: "16:00", endTime: "18:00", subject: "TKA - Matematika", duration: "2 jam", liveClassUrl: null },
   { id: 4, studentId: 1, dayOfWeek: "Kamis", startTime: "16:00", endTime: "18:00", subject: "TKA - Fisika", duration: "2 jam", liveClassUrl: "https://meet.google.com/abc-defg-hij" },
   { id: 5, studentId: 1, dayOfWeek: "Jumat", startTime: "16:00", endTime: "18:00", subject: "Tryout & Pembahasan", duration: "2 jam", liveClassUrl: null },

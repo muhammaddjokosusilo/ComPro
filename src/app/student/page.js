@@ -1,21 +1,71 @@
-'use client';
+// 'use client';
 
-import Link from 'next/link';
-import { useAuth } from '@/lib/auth';
-import { students, studentSchedules, materials, feedbacks, programs, formatDateTime } from '@/lib/data';
+// import Link from 'next/link';
+// import { useAuth } from '@/lib/auth';
+// import { students, studentSchedules, materials, feedbacks, programs, formatDateTime } from '@/lib/data';
+import { createSupabaseServerClient } from "@/lib/supabase/server-client";
 import { Calendar, BookOpen, MessageSquare, ArrowRight, Clock, Lock, Unlock, Sparkles, Package } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
-export default function StudentDashboard() {
-  const { user } = useAuth();
-  const student = students.find(s => s.id === user?.id);
-  const schedule = studentSchedules.filter(s => s.studentId === user?.id);
-  const studentMaterials = materials.filter(m => m.programId === student?.programId);
-  const unlockedMaterials = studentMaterials.filter(m => !m.isLocked);
-  const studentFeedback = feedbacks.filter(f => f.studentId === user?.id);
-  const latestFeedback = studentFeedback[0];
-  const program = programs.find(p => p.id === student?.programId);
 
-  const sessionPercent = student ? Math.round((student.remainingSessions / student.totalSessions) * 100) : 0;
+export default async function StudentDashboard() {
+  // const { user } = useAuth();
+  // const student = students.find(s => s.id === user?.id);
+  // const schedule = studentSchedules.filter(s => s.studentId === user?.id);
+  // const studentMaterials = materials.filter(m => m.programId === student?.programId);
+  // const unlockedMaterials = studentMaterials.filter(m => !m.isLocked);
+  // const studentFeedback = feedbacks.filter(f => f.studentId === user?.id);
+  // const latestFeedback = studentFeedback[0];
+  // const program = programs.find(p => p.id === student?.programId);
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile, error } = await supabase 
+    .from("users") 
+    .select("role, username") 
+    .eq("id", user.id) 
+    .single();
+
+  if (error) {
+    return <p>Error: {error.message}</p>;
+  }
+
+  const { data: student } = await supabase
+    .from("students")
+    .select(`
+        *,
+        programs (
+          title,
+          session
+        )
+    `)
+    .eq("user_id", user.id)
+    .single();
+
+  const { data: schedule } = await supabase
+    .from("schedules")
+    .select("*")
+    .eq("user_id", user.id)
+    // .single();
+
+  // 🔥 proteksi role
+  if (profile.role !== "student") {
+    redirect("/admin");
+  }
+
+  if (error) {
+    return <p>Error: {error.message}</p>;
+  }
+
+  const remainingSession = student.programs.session - student.used_session;
+  const sessionPercent = student ? Math.round((remainingSession / student.programs.session) * 100) : 0;
   const sessionColor = sessionPercent <= 15 ? 'var(--error)' : sessionPercent <= 40 ? 'var(--warning)' : 'var(--success)';
 
   return (
@@ -31,9 +81,9 @@ export default function StudentDashboard() {
           <Sparkles size={16} style={{ color: 'var(--primary)' }} />
           <span style={{ fontSize: 'var(--text-sm)', color: 'var(--primary)', fontWeight: 500 }}>Portal Siswa</span>
         </div>
-        <h1 style={{ marginBottom: 'var(--space-2)' }}>Selamat Datang, {user?.name}! 👋</h1>
+        <h1 style={{ marginBottom: 'var(--space-2)' }}>Selamat Datang, {profile.username}! 👋</h1>
         <p style={{ fontSize: 'var(--text-md)', color: 'var(--neutral-500)', margin: 0 }}>
-          Program: <strong style={{ color: 'var(--neutral-700)' }}>{program?.name || '-'}</strong>
+          Program: <strong style={{ color: 'var(--neutral-700)' }}>{student.programs.title || '-'}</strong>
         </p>
       </div>
 
@@ -47,9 +97,9 @@ export default function StudentDashboard() {
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
               <div className="stat-card-value" style={{ color: sessionColor }}>
-                {student?.remainingSessions ?? 0}
+                {remainingSession}
               </div>
-              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-500)' }}>/ {student?.totalSessions ?? 0} sesi</span>
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--neutral-500)' }}>/ {student.programs.session} sesi</span>
             </div>
             <div className="stat-card-label">Sisa Sesi</div>
             {/* Progress Bar */}
@@ -74,8 +124,8 @@ export default function StudentDashboard() {
             <div className="stat-card-value">{schedule.length}</div>
             <div className="stat-card-label">Jadwal Kelas</div>
           </div>
-        </div>
-        <div className="stat-card">
+        </div> 
+        {/* <div className="stat-card">
           <div className="stat-card-icon success">
             <BookOpen size={24} />
           </div>
@@ -83,8 +133,8 @@ export default function StudentDashboard() {
             <div className="stat-card-value">{unlockedMaterials.length}/{studentMaterials.length}</div>
             <div className="stat-card-label">Materi Tersedia</div>
           </div>
-        </div>
-        <div className="stat-card">
+        </div> */}
+        {/* <div className="stat-card">
           <div className="stat-card-icon info">
             <MessageSquare size={24} />
           </div>
@@ -92,12 +142,12 @@ export default function StudentDashboard() {
             <div className="stat-card-value">{studentFeedback.length}</div>
             <div className="stat-card-label">Feedback</div>
           </div>
-        </div>
+        </div> */}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
+      {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}> */}
         {/* Upcoming Schedule */}
-        <div className="card" style={{ padding: 'var(--space-6)' }}>
+        {/* <div className="card" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)' }}>Jadwal Kelas</h3>
             <Link href="/student/schedule" style={{ fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -127,10 +177,10 @@ export default function StudentDashboard() {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Latest Feedback */}
-        <div className="card" style={{ padding: 'var(--space-6)' }}>
+        {/* <div className="card" style={{ padding: 'var(--space-6)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)' }}>Feedback Terbaru</h3>
             <Link href="/student/feedback" style={{ fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -155,11 +205,11 @@ export default function StudentDashboard() {
               Belum ada feedback.
             </p>
           )}
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
 
       {/* Recent Materials */}
-      <div className="card" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
+      {/* <div className="card" style={{ padding: 'var(--space-6)', marginTop: 'var(--space-6)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
           <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--text-md)' }}>Materi Belajar</h3>
           <Link href="/student/materials" style={{ fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -179,7 +229,7 @@ export default function StudentDashboard() {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </div>*/}
+    </div> 
   );
 }

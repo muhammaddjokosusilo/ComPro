@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
+// import { useAuth } from '@/lib/auth';
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { GraduationCap, Mail, Lock, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -11,8 +12,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
-  const { login } = useAuth();
+  // const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,19 +22,46 @@ export default function LoginPage() {
     setLoading(true);
 
     // Simulate network delay
-    await new Promise(r => setTimeout(r, 500));
+    // await new Promise(r => setTimeout(r, 500));
+    const supabase = getSupabaseBrowserClient();
 
-    const result = login(email, password);
-    if (result.success) {
-      if (result.user.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/student');
-      }
-    } else {
-      setError(result.error);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data?.user) {
+      setError(error?.message || "Login gagal");
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    const res = await fetch("/api/me");
+    const result = await res.json();
+
+    if (!res.ok) {
+      setError(result.error);
+      setLoading(false);
+      return;
+    }
+
+    if (result.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/student");
+    }
+
+    // const result = login(email, password);
+    // if (result.success) {
+    //   if (result.user.role === 'admin') {
+    //     router.push('/admin');
+    //   } else {
+    //     router.push('/student');
+    //   }
+    // } else {
+    //   setError(aresult.error);
+    // }
+
   };
 
   return (

@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth';
-import { students } from '@/lib/data';
 import StudentRenewalPopup from '@/components/StudentRenewalPopup';
 import { 
   LayoutDashboard, Calendar, BookOpen, MessageSquare, 
@@ -20,18 +18,46 @@ const navItems = [
 ];
 
 export default function StudentLayout({ children }) {
-  const { user, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  const [user, setUser] = useState(null);
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // 🔥 ambil data user + student dari API
   useEffect(() => {
-    if (!loading && (!user || user.role !== 'student')) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
+    const fetchData = async () => {
+      const res = await fetch('/api/me');
+      const data = await res.json();
 
-  if (loading || !user || user.role !== 'student') {
+      if (!res.ok || data.role !== 'student') {
+        router.push('/login');
+        return;
+      }
+
+      setUser(data);
+
+      // ambil data student
+      const resStudent = await fetch('/api/student');
+      const studentData = await resStudent.json();
+
+      setStudent(studentData);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [router]);
+
+  // 🔥 logout
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    router.push('/login');
+  };
+
+  // loading state
+  if (loading || !user) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: 'var(--neutral-400)' }}>Memuat...</p>
@@ -39,18 +65,12 @@ export default function StudentLayout({ children }) {
     );
   }
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-
   return (
     <div className="dashboard-layout">
       {/* Mobile Toggle */}
       <button 
         className="sidebar-mobile-toggle"
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label="Toggle sidebar"
       >
         {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -64,7 +84,7 @@ export default function StudentLayout({ children }) {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
-          <GraduationCap size={20} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 6 }} />
+          <GraduationCap size={20} style={{ marginRight: 6 }} />
           La Masia
           <small>Portal Siswa</small>
         </div>
@@ -88,39 +108,43 @@ export default function StudentLayout({ children }) {
           })}
         </nav>
 
+        {/* USER INFO */}
         <div className="sidebar-footer">
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-            padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-2)'
-          }}>
+          <div style={{ display: 'flex', gap: '10px', padding: '10px' }}>
             <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(139,115,85,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--primary)', fontWeight: 600, fontSize: 'var(--text-sm)'
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: '#eee',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}>
-              {user.name.charAt(0)}
+              {user.username?.charAt(0).toUpperCase()}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--neutral-800)' }}>{user.name}</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)' }}>{user.email}</div>
+
+            <div>
+              <div>{user.username}</div>
+              <div style={{ fontSize: 12, color: '#888' }}>
+                {user.email}
+              </div>
             </div>
           </div>
-          <button className="btn btn-ghost btn-sm w-full" onClick={handleLogout} style={{ justifyContent: 'flex-start' }}>
-            <LogOut size={16} /> Keluar
+
+          <button onClick={handleLogout}>
+            <LogOut size={16} /> Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* MAIN */}
       <main className="dashboard-main">
-        {/* Session Renewal Popup - blocks when remainingSessions === 0 */}
-        {(() => {
-          const studentData = students.find(s => s.id === user?.id);
-          if (studentData && studentData.remainingSessions === 0 && pathname !== '/student/renew') {
-            return <StudentRenewalPopup student={studentData} />;
-          }
-          return null;
-        })()}
+
+        {/* 🔥 Popup jika sesi habis */}
+        {student?.remainingSessions === 0 && pathname !== '/student/renew' && (
+          <StudentRenewalPopup student={student} />
+        )}
+
         {children}
       </main>
     </div>
