@@ -19,29 +19,55 @@ const navItems = [
 ];
 
 export default function AdminLayout({ children }) {
-  const { user, logout, loading } = useAuth();
+  // const { user, logout, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && (!user || user.role !== 'admin')) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
+  // const router = useRouter();
+  // const pathname = usePathname();
 
-  if (loading || !user || user.role !== 'admin') {
+  const [user, setUser] = useState(null);
+  // const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
+  // const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // 🔥 ambil data user + student dari API
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+
+      if (!res.ok || data.role !== 'admin') {
+        router.push('/login');
+        return;
+      }
+
+      setUser(data);
+
+      // // ambil data student
+      // const resAdmin = await fetch('/api/admin');
+      // const adminData = await resAdmin.json();
+
+      // setAdmin(adminData);
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    router.push('/login');
+  };
+
+  if (loading || !user) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <p style={{ color: 'var(--neutral-400)' }}>Memuat...</p>
       </div>
     );
   }
-
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
 
   return (
     <div className="dashboard-layout">
@@ -89,26 +115,31 @@ export default function AdminLayout({ children }) {
         </nav>
 
         <div className="sidebar-footer">
-          <div style={{ 
-            display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
-            padding: 'var(--space-3) var(--space-3)', marginBottom: 'var(--space-2)'
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'rgba(139,115,85,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--primary)', fontWeight: 600, fontSize: 'var(--text-sm)'
-            }}>
-              {user.name.charAt(0)}
+          <div style={{ display: 'flex', gap: '10px', padding: '10px' }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: '#eee',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {user.username?.charAt(0).toUpperCase()}
+              </div>
+
+              <div>
+                <div>{user.username}</div>
+                <div style={{ fontSize: 12, color: '#888' }}>
+                  {user.email}
+                </div>
+              </div>
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--neutral-800)' }}>{user.name}</div>
-              <div style={{ fontSize: 'var(--text-xs)', color: 'var(--neutral-400)' }}>{user.email}</div>
-            </div>
+
+            <button onClick={handleLogout}>
+              <LogOut size={16} /> Logout
+            </button>
           </div>
-          <button className="btn btn-ghost btn-sm w-full" onClick={handleLogout} style={{ justifyContent: 'flex-start' }}>
-            <LogOut size={16} /> Keluar
-          </button>
-        </div>
       </aside>
 
       {/* Main Content */}

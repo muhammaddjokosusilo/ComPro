@@ -47,7 +47,7 @@ export default function LoginPage() {
 
     if (result.role === "admin") {
       router.push("/admin");
-    } else {
+    } else if (result.role === "student") {
       router.push("/student");
     }
 
@@ -146,14 +146,14 @@ export default function LoginPage() {
               padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)' 
             }}>
               <span style={{ color: 'var(--neutral-500)' }}>Admin:</span>{' '}
-              <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>admin@lamasia.id</code> / <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>admin123</code>
+              <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>admin@lamasia.com</code> / <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>admin123</code>
             </div>
             <div style={{ 
               background: 'var(--cream-50)', borderRadius: 'var(--radius-md)', 
               padding: 'var(--space-2) var(--space-3)', fontSize: 'var(--text-sm)' 
             }}>
               <span style={{ color: 'var(--neutral-500)' }}>Siswa:</span>{' '}
-              <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>budi@student.lamasia.id</code> / <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>student123</code>
+              <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>joxom24380@dwseal.com</code> / <code style={{ fontFamily: 'var(--font-mono)', color: 'var(--neutral-700)' }}>student123</code>
             </div>
           </div>
         </div>
